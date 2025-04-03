@@ -34,7 +34,7 @@ recomputation, and showed an implementation of memoizing *thunks* in
 terms of refs. As described in Section 17.3, that functionality is
 actually already available in OCaml through its `Lazy` module. The
 `Lazy` module introduces a new polymorphic type `'a Lazy.t` of delayed
-values of type 'a, and a new function `Lazy.force : 'a Lazy.t -> 'a`
+values of type `'a`, and a new function `Lazy.force : 'a Lazy.t -> 'a`
 that forces a delayed computation to occur, saving the result if this
 is the first time the value was forced and simply returning the saved
 value on later requests. For instance, suppose we've defined the
@@ -134,12 +134,36 @@ multiplied by the second argument. For example:
     [0.5; 0.25; 0.125; 0.0625; 0.03125; 0.015625; 0.0078125; 
      0.00390625; 0.001953125; 0.0009765625]
 
-For more information on geometric sequences, see
-<https://en.wikipedia.org/wiki/Geometric_progression>.
+(For more information on geometric sequences, see
+<https://en.wikipedia.org/wiki/Geometric_progression>.)
 ....................................................................*)
 
-let rec geo init mult =
-  lazy (Cons (init, (geo (init *. mult) mult))) ;;
+(* Consider a simple geometric series like 
+
+   1 2 4 8 16 32…
+
+   This series starts with its initial value 1 and is followed by the
+   series 2 4 8 16 32…. So we've reduced the problem of generating
+   the full series 1 2 4… to the problem of generating the series 2
+   4 8… and prepending the initial value 1.
+
+   There are multiple ways to generate the tail series 2 4 8…. One
+   way is to note that this is itself a geometric series with
+   different initial value (2) but the same multiplicative factor as
+   before (2). This leads to the following implementation of `geo`: *)
+    
+let rec geo (init : float) (factor : float) : float stream =
+  lazy (Cons (init, geo (init *. factor) factor)) ;;
+
+(* Alternatively, we can think of the geometric series 2 4 8… as
+   being generated from the series 1 2 4 8… by simply mapping the
+   doubling function over all of its elements. This leads to the
+   following implementation:
+
+      let rec geo (init : float) (factor : float) : float stream =
+        lazy (Cons (init, smap (( *. ) factor) (geo init factor))) 
+
+   Either of these approaches is effective (and perhaps others).  *)
 
 (*====================================================================
 Part 2. Eratosthenes' sieve revisited
